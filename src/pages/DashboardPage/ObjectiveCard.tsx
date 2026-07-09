@@ -66,7 +66,7 @@ export function ObjectiveCard({
             {obj.description && <div className={styles.oMeta}>{obj.description}</div>}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <div className={styles.oBadge}>{obj.progress}%</div>
           <button className={styles.editBtn} onClick={(e) => {
             e.stopPropagation();
