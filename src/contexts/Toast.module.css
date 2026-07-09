@@ -1,0 +1,9 @@
+.toast {
+  position: fixed; bottom: 80px; left: 50%; z-index: 200;
+  background: var(--text); color: #fff; padding: 12px 20px;
+  border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-md); white-space: nowrap;
+  transform: translateX(-50%) translateY(120%);
+  transition: transform 0.3s ease;
+}
+.show { transform: translateX(-50%) translateY(0); }

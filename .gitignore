@@ -1,0 +1,7 @@
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+*.tar.gz
+.DS_Store
+.env.local
+.env.*.local
