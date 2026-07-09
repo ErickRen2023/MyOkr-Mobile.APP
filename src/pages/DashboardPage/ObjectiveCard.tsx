@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { reorderKeyResults } from '../../api/keyResults';
+import { useState, useCallback } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { Objective, KeyResult } from '../../types';
 import { KeyResultItem } from './KeyResultItem';
 import styles from './style.module.css';
@@ -12,53 +15,67 @@ interface ObjectiveCardProps {
   onCreateKR: (objId: number) => void;
   onEditObjective: (obj: Objective) => void;
   onEditKRItem: (kr: KeyResult) => void;
-  onReorderObjectives: (fromIndex: number, toIndex: number) => void;
   onReorderKRs: (objId: number, fromIndex: number, toIndex: number) => void;
-  showToast: (msg: string) => void;
   onRefresh: () => void;
+  showToast: (msg: string) => void;
 }
 
 export function ObjectiveCard({
   obj, index, total,
-  onEditKR, onCreateKR, onEditObjective, onEditKRItem,
-  onReorderObjectives, onReorderKRs,
-  showToast, onRefresh
+  onEditKR, onCreateKR, onEditObjective, onEditKRItem, onReorderKRs,
+  onRefresh, showToast
 }: ObjectiveCardProps) {
   const [expanded, setExpanded] = useState(true);
 
-  const handleMoveUp = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (index === 0) return;
-    onReorderObjectives(index, index - 1);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `o-${obj.id}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
   };
 
-  const handleMoveDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (index === total - 1) return;
-    onReorderObjectives(index, index + 1);
-  };
+  // KR-level DnD sensors
+  const krSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
-  const handleKRMoveUp = (krIndex: number) => {
-    if (krIndex === 0) return;
-    onReorderKRs(obj.id, krIndex, krIndex - 1);
-  };
+  const krIds = obj.key_results.map(kr => `kr-${kr.id}`);
 
-  const handleKRMoveDown = (krIndex: number) => {
-    if (krIndex === obj.key_results.length - 1) return;
-    onReorderKRs(obj.id, krIndex, krIndex + 1);
-  };
+  const handleKRDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = obj.key_results.findIndex(kr => `kr-${kr.id}` === active.id);
+    const newIndex = obj.key_results.findIndex(kr => `kr-${kr.id}` === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    onReorderKRs(obj.id, oldIndex, newIndex);
+  }, [obj, onReorderKRs]);
 
   return (
-    <div className={`${styles.oCard} ${expanded ? styles.expanded : ''}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${styles.oCard} ${expanded ? styles.expanded : ''} ${isDragging ? styles.dragging : ''}`}
+    >
       <div className={styles.oHeader} onClick={() => setExpanded(!expanded)}>
         <div className={styles.oLeft}>
-          <div className={styles.moveBtns}>
-            <button className={styles.moveBtn} onClick={handleMoveUp} disabled={index === 0}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>
-            </button>
-            <button className={styles.moveBtn} onClick={handleMoveDown} disabled={index === total - 1}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
+          <div className={styles.dragHandle} {...attributes} {...listeners} onClick={(e) => e.stopPropagation()}>
+            <svg width="16" height="16" viewBox="0 0 12 12" fill="currentColor" opacity="0.35">
+              <circle cx="3" cy="2" r="1"/><circle cx="9" cy="2" r="1"/>
+              <circle cx="3" cy="6" r="1"/><circle cx="9" cy="6" r="1"/>
+              <circle cx="3" cy="10" r="1"/><circle cx="9" cy="10" r="1"/>
+            </svg>
           </div>
           <div className={styles.oDot} />
           <div style={{ minWidth: 0 }}>
@@ -83,20 +100,22 @@ export function ObjectiveCard({
       </div>
       {expanded && (
         <div className={styles.oBody}>
-          <div className={styles.krList}>
-            {obj.key_results.map((kr, krIndex) => (
-              <KeyResultItem
-                key={kr.id}
-                kr={kr}
-                index={krIndex}
-                total={obj.key_results.length}
-                onEdit={() => onEditKR(kr)}
-                onEditKRItem={onEditKRItem}
-                onMoveUp={() => handleKRMoveUp(krIndex)}
-                onMoveDown={() => handleKRMoveDown(krIndex)}
-              />
-            ))}
-          </div>
+          <DndContext sensors={krSensors} collisionDetection={closestCenter} onDragEnd={handleKRDragEnd}>
+            <SortableContext items={krIds} strategy={verticalListSortingStrategy}>
+              <div className={styles.krList}>
+                {obj.key_results.map((kr, krIndex) => (
+                  <KeyResultItem
+                    key={kr.id}
+                    kr={kr}
+                    index={krIndex}
+                    total={obj.key_results.length}
+                    onEdit={() => onEditKR(kr)}
+                    onEditKRItem={onEditKRItem}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
           <button className={styles.addKrBtn} onClick={(e) => { e.stopPropagation(); onCreateKR(obj.id); }}>+ 添加关键结果</button>
         </div>
       )}

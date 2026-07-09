@@ -71,6 +71,30 @@
   margin-top: 1px;
 }
 
+/* Drag handle - touch-friendly sizing */
+.dragHandle {
+  cursor: grab;
+  color: var(--text-muted);
+  padding: 12px 8px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 3px;
+  min-width: 40px;
+  min-height: 40px;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.dragHandle:active {
+  cursor: grabbing;
+  background: var(--border);
+}
+.dragging {
+  opacity: 0.5;
+  z-index: 1;
+}
+
 /* Move buttons */
 .moveBtn {
   width: 28px; height: 28px; border: none; background: none;

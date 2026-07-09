@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { SortableMilestone } from './SortableMilestone';
 import { BottomSheet } from '../../components/common/BottomSheet';
 import { updateKeyResult, archiveKeyResult } from '../../api/keyResults';
 import { createMilestone, updateMilestone, deleteMilestone, reorderMilestones } from '../../api/milestones';
@@ -51,20 +54,36 @@ export function EditKeyResultSheet({ isOpen, onClose, keyResult, onSaved, showTo
   }, [isOpen, keyResult]);
 
   const visibleMs = editMilestones.filter(m => !deletedMsIds.has(m.id));
+  const visibleMsIds = visibleMs.map(m => `ms-${m.id}`);
 
-  const handleMsMoveUp = (index: number) => {
-    if (index === 0) return;
-    const reordered = [...editMilestones];
-    [reordered[index], reordered[index - 1]] = [reordered[index - 1], reordered[index]];
-    setEditMilestones(reordered);
-  };
+  // DnD sensors for milestone reordering
+  const msSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
-  const handleMsMoveDown = (index: number) => {
-    if (index === visibleMs.length - 1) return;
-    const reordered = [...editMilestones];
-    [reordered[index], reordered[index + 1]] = [reordered[index + 1], reordered[index]];
-    setEditMilestones(reordered);
-  };
+  const handleMsDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = visibleMs.findIndex(m => `ms-${m.id}` === active.id);
+    const newIndex = visibleMs.findIndex(m => `ms-${m.id}` === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedVisible = arrayMove(visibleMs, oldIndex, newIndex);
+    // Reconstruct editMilestones preserving deleted items' positions
+    const newEditMilestones: Milestone[] = [];
+    let vi = 0;
+    for (const m of editMilestones) {
+      if (deletedMsIds.has(m.id)) {
+        newEditMilestones.push(m);
+      } else {
+        newEditMilestones.push(reorderedVisible[vi++]);
+      }
+    }
+    setEditMilestones(newEditMilestones);
+  }, [visibleMs, editMilestones, deletedMsIds]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -207,32 +226,25 @@ export function EditKeyResultSheet({ isOpen, onClose, keyResult, onSaved, showTo
             {visibleMs.length === 0 && newMilestones.every(m => !m.trim()) ? (
               <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '8px 0' }}>暂无里程碑节点，请在下方添加</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {visibleMs.map((m, index) => (
-                  <div key={m.id} className={styles.msItem} style={{ gap: 6 }}>
-                    <div className={styles.moveBtns}>
-                      <button className={styles.moveBtn} onClick={() => handleMsMoveUp(index)} disabled={index === 0} style={{ width: 22, height: 22 }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>
-                      </button>
-                      <button className={styles.moveBtn} onClick={() => handleMsMoveDown(index)} disabled={index === visibleMs.length - 1} style={{ width: 22, height: 22 }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-                      </button>
-                    </div>
-                    <input
-                      className={styles.fInput}
-                      value={m.description}
-                      onChange={e => {
-                        const next = editMilestones.map(x => x.id === m.id ? { ...x, description: e.target.value } : x);
-                        setEditMilestones(next);
-                      }}
-                      style={{ flex: 1 }}
-                    />
-                    <button className={styles.editorDelBtn} onClick={() => setDeletedMsIds(prev => new Set([...prev, m.id]))}>
-                      ✕
-                    </button>
+              <DndContext sensors={msSensors} collisionDetection={closestCenter} onDragEnd={handleMsDragEnd}>
+                <SortableContext items={visibleMsIds} strategy={verticalListSortingStrategy}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {visibleMs.map((m, index) => (
+                      <SortableMilestone
+                        key={m.id}
+                        milestone={m}
+                        index={index}
+                        total={visibleMs.length}
+                        onChange={(desc) => {
+                          const next = editMilestones.map(x => x.id === m.id ? { ...x, description: desc } : x);
+                          setEditMilestones(next);
+                        }}
+                        onDelete={() => setDeletedMsIds(prev => new Set([...prev, m.id]))}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
 
             {newMilestones.map((desc, i) => (

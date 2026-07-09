@@ -1,3 +1,5 @@
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { KeyResult } from '../../types';
 import styles from './style.module.css';
 
@@ -7,24 +9,40 @@ interface KeyResultItemProps {
   total: number;
   onEdit: () => void;
   onEditKRItem: (kr: KeyResult) => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
 }
 
-export function KeyResultItem({ kr, index, total, onEdit, onEditKRItem, onMoveUp, onMoveDown }: KeyResultItemProps) {
+export function KeyResultItem({ kr, index, total, onEdit, onEditKRItem }: KeyResultItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `kr-${kr.id}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
   const p = kr.progress;
   const color = p >= 80 ? 'green' : p >= 50 ? 'blue' : p >= 25 ? 'orange' : 'red';
 
   return (
-    <div className={styles.krItem}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${styles.krItem} ${isDragging ? styles.dragging : ''}`}
+    >
       <div className={styles.krHeader}>
-        <div className={styles.moveBtns}>
-          <button className={styles.moveBtn} onClick={onMoveUp} disabled={index === 0} style={{ width: 22, height: 22 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>
-          </button>
-          <button className={styles.moveBtn} onClick={onMoveDown} disabled={index === total - 1} style={{ width: 22, height: 22 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
+        <div className={styles.dragHandle} {...attributes} {...listeners}>
+          <svg width="16" height="16" viewBox="0 0 12 12" fill="currentColor" opacity="0.35">
+            <circle cx="3" cy="2" r="1"/><circle cx="9" cy="2" r="1"/>
+            <circle cx="3" cy="6" r="1"/><circle cx="9" cy="6" r="1"/>
+            <circle cx="3" cy="10" r="1"/><circle cx="9" cy="10" r="1"/>
+          </svg>
         </div>
         <span className={styles.krTitle}>{kr.title}</span>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, flexShrink: 0 }}>

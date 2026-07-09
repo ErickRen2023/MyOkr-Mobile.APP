@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useCycles } from '../../contexts/CycleContext';
 import { useToast } from '../../contexts/ToastContext';
 import { fetchDashboard } from '../../api/dashboard';
@@ -69,22 +71,35 @@ export function DashboardPage() {
     return () => window.removeEventListener('open-create-objective', handler);
   }, [cycles.length, showToast]);
 
-  // Reorder handlers
-  const handleReorderObjectives = async (fromIndex: number, toIndex: number) => {
-    if (!data) return;
-    const newData = structuredClone(data);
-    const [moved] = newData.objectives.splice(fromIndex, 1);
-    newData.objectives.splice(toIndex, 0, moved);
+  // DnD sensors with touch support
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const objectiveIds = data?.objectives.map(o => `o-${o.id}`) ?? [];
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !data) return;
+
+    const oldIndex = data.objectives.findIndex(o => `o-${o.id}` === active.id);
+    const newIndex = data.objectives.findIndex(o => `o-${o.id}` === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(data.objectives, oldIndex, newIndex);
+    const newData = { ...data, objectives: reordered };
     setData(newData);
     try {
-      await reorderObjectives(newData.objectives.map((o, i) => ({ id: o.id, sort_order: i })));
+      await reorderObjectives(reordered.map((o, i) => ({ id: o.id, sort_order: i })));
     } catch {
       showToast('排序更新失败');
       loadDashboard();
     }
-  };
+  }, [data, showToast, loadDashboard]);
 
-  const handleReorderKRs = async (objId: number, fromIndex: number, toIndex: number) => {
+  const handleReorderKRs = useCallback(async (objId: number, fromIndex: number, toIndex: number) => {
     if (!data) return;
     const newData = structuredClone(data);
     const obj = newData.objectives.find(o => o.id === objId);
@@ -98,7 +113,7 @@ export function DashboardPage() {
       showToast('排序更新失败');
       loadDashboard();
     }
-  };
+  }, [data, showToast, loadDashboard]);
 
   const renderBody = () => {
     if (cyclesLoading) {
@@ -190,36 +205,39 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div className={styles.oList}>
-          {data.objectives.map((obj: Objective, index: number) => (
-            <ObjectiveCard
-              key={obj.id}
-              obj={obj}
-              index={index}
-              total={data.objectives.length}
-              onEditKR={(kr) => {
-                setEditingKR(kr);
-                setShowProgress(true);
-              }}
-              onCreateKR={(objId) => {
-                setKrObjectiveId(objId);
-                setShowCreateKR(true);
-              }}
-              onEditObjective={(obj) => {
-                setEditingObj(obj);
-                setShowEditO(true);
-              }}
-              onEditKRItem={(kr) => {
-                setEditingKrForEdit(kr);
-                setShowEditKR(true);
-              }}
-              onReorderObjectives={handleReorderObjectives}
-              onReorderKRs={handleReorderKRs}
-              showToast={showToast}
-              onRefresh={loadDashboard}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={objectiveIds} strategy={verticalListSortingStrategy}>
+            <div className={styles.oList}>
+              {data.objectives.map((obj: Objective, index: number) => (
+                <ObjectiveCard
+                  key={obj.id}
+                  obj={obj}
+                  index={index}
+                  total={data.objectives.length}
+                  onEditKR={(kr) => {
+                    setEditingKR(kr);
+                    setShowProgress(true);
+                  }}
+                  onCreateKR={(objId) => {
+                    setKrObjectiveId(objId);
+                    setShowCreateKR(true);
+                  }}
+                  onEditObjective={(obj) => {
+                    setEditingObj(obj);
+                    setShowEditO(true);
+                  }}
+                  onEditKRItem={(kr) => {
+                    setEditingKrForEdit(kr);
+                    setShowEditKR(true);
+                  }}
+                  onRefresh={loadDashboard}
+                  showToast={showToast}
+                  onReorderKRs={handleReorderKRs}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       </>
     );
   };
