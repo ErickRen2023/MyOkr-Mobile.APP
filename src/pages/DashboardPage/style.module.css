@@ -52,13 +52,21 @@
 .oList { display: flex; flex-direction: column; gap: 12px; }
 .oCard { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
 .oHeader {
-  display: flex; align-items: flex-start; justify-content: space-between;
+  display: flex; flex-direction: column; gap: 8px;
   padding: 16px; cursor: pointer; user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 .oHeader:active { background: var(--bg); }
+.oHeaderTop {
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.oHeaderBottom {
+  display: flex; align-items: center; gap: 8px;
+  padding-left: 30px; /* indent to align with title text (dragHandle ~40px + gap 10px + dot 8px ≈ 58px, use smaller for mobile) */
+}
 .oLeft { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
 .oDot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 5px; }
+.oTextCol { min-width: 0; flex: 1; }
 .oTitle { font-size: 15px; font-weight: 600; word-break: break-word; }
 .oMeta { font-size: 11px; color: var(--text-muted); margin-top: 2px; word-break: break-word; }
 .oBadge { font-size: 12px; font-weight: 600; color: var(--blue); background: var(--blue-light); padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
