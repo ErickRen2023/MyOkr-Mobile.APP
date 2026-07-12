@@ -69,22 +69,25 @@ export function ObjectiveCard({
       className={`${styles.oCard} ${expanded ? styles.expanded : ''} ${isDragging ? styles.dragging : ''}`}
     >
       <div className={styles.oHeader} onClick={() => setExpanded(!expanded)}>
-        <div className={styles.oLeft}>
-          <div className={styles.dragHandle} {...attributes} {...listeners} onClick={(e) => e.stopPropagation()}>
-            <svg width="16" height="16" viewBox="0 0 12 12" fill="currentColor" opacity="0.35">
-              <circle cx="3" cy="2" r="1"/><circle cx="9" cy="2" r="1"/>
-              <circle cx="3" cy="6" r="1"/><circle cx="9" cy="6" r="1"/>
-              <circle cx="3" cy="10" r="1"/><circle cx="9" cy="10" r="1"/>
-            </svg>
+        <div className={styles.oHeaderTop}>
+          <div className={styles.oLeft}>
+            <div className={styles.dragHandle} {...attributes} {...listeners} onClick={(e) => e.stopPropagation()}>
+              <svg width="16" height="16" viewBox="0 0 12 12" fill="currentColor" opacity="0.35">
+                <circle cx="3" cy="2" r="1"/><circle cx="9" cy="2" r="1"/>
+                <circle cx="3" cy="6" r="1"/><circle cx="9" cy="6" r="1"/>
+                <circle cx="3" cy="10" r="1"/><circle cx="9" cy="10" r="1"/>
+              </svg>
+            </div>
+            <div className={styles.oDot} />
+            <div className={styles.oTextCol}>
+              <div className={styles.oTitle}>{obj.title}</div>
+              {obj.description && <div className={styles.oMeta}>{obj.description}</div>}
+            </div>
           </div>
-          <div className={styles.oDot} />
-          <div style={{ minWidth: 0 }}>
-            <div className={styles.oTitle}>{obj.title}</div>
-            {obj.description && <div className={styles.oMeta}>{obj.description}</div>}
-          </div>
+          <svg className={styles.oChev} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <div className={styles.oBadge}>{obj.progress}%</div>
+        <div className={styles.oHeaderBottom} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.oBadge}>{obj.key_results.filter(kr => kr.is_achieved).length}/{obj.key_results.length} KR</div>
           <button className={styles.editBtn} onClick={(e) => {
             e.stopPropagation();
             onEditObjective(obj);
@@ -95,7 +98,6 @@ export function ObjectiveCard({
             </svg>
             编辑
           </button>
-          <svg className={styles.oChev} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
       {expanded && (
