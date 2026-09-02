@@ -1,28 +1,14 @@
 .title { font-size: 24px; font-weight: 700; margin-bottom: 24px; }
 .section { margin-bottom: 28px; }
 .sectionTitle { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+.setCard { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); padding: 20px; }
+.row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; font-size: 14px; }
+.row + .row { border-top: 1px solid var(--border); }
+.rowLabel { color: var(--text-secondary); }
+.rowValue { font-weight: 500; font-family: monospace; }
 .logoutBtn {
-  width: 100%; padding: 14px; background: var(--card); color: var(--text-secondary);
-  border: 1px solid var(--border); border-radius: var(--radius); font-size: 16px;
+  width: 100%; margin-top: 16px; padding: 12px; background: var(--red); color: #fff;
+  border: 0; border-radius: var(--radius-sm); font-size: 16px;
   font-weight: 500; cursor: pointer; text-align: center;
 }
-.logoutBtn:active { background: var(--bg); }
-.dangerTitle { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--red); }
-.dangerCard { background: var(--red-light); border: 1px solid var(--red); border-radius: var(--radius); padding: 24px; }
-.dangerDesc { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
-.dangerBtn { padding: 10px 20px; font-size: 14px; background: var(--red); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; }
-.dangerBtn:hover { background: #DC2626; }
-.warnText { font-size: 14px; color: var(--red); margin-bottom: 16px; line-height: 1.5; }
-.modalDesc { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
-.secretBox { background: var(--bg); border: 2px dashed var(--blue); border-radius: var(--radius-sm); padding: 16px; text-align: center; margin: 16px 0; }
-.secretVal { font-size: 16px; font-family: monospace; font-weight: 700; color: var(--blue); letter-spacing: 1px; word-break: break-all; }
-.secretWarn { font-size: 12px; color: var(--red); margin-top: 8px; text-align: center; }
-.modalBtns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-.btnSec { padding: 12px 20px; background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; }
-.btnDanger { padding: 12px 20px; background: var(--red); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; }
-.btnDanger:hover { background: #DC2626; }
-.btnDanger:disabled { opacity: 0.6; cursor: not-allowed; }
-.field { margin-bottom: 16px; }
-.fLabel { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
-.fInput { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 16px; outline: none; background: var(--card); box-sizing: border-box; }
-.fInput:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-light); }
+.logoutBtn:active { background: #DC2626; }
